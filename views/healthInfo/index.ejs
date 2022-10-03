@@ -1,0 +1,98 @@
+<%- include("../partials/header")  %>
+
+<div class="w3-container">
+    <div class="w3-card-4" style="width: 80%;margin:2% auto 0 auto;min-height: 100vh;">
+        <div class="w3-container">
+            <h1 class="w3-center w3-border-bottom" style="padding-bottom: 5px;">WELCOME TO HEALTH DATA</h1>
+            <h3>Name : <%= profile.name.first %> <%= profile.name.last %></h3>
+            <h3>Age : <%= moment(profile.dob).fromNow().slice(0, moment(profile.dob).fromNow().length-4) %></h3>
+            <h3>Gender : <span style="text-transform: capitalize;"><%= profile.gender %></span></h3>
+            <h3>Height: <%= profile.height.magnitude %> <%= profile.height.unit %></h3>
+            <h3>Weight : <%= profile.weight.magnitude %> <%= profile.weight.unit %></h3>
+            <a style="text-decoration: none;margin: 20px 0 0 10px;" href="/healthinfo/show" class="w3-button w3-blue">Update Weight</a>
+        </div>
+        <br><br><br>
+        <div id="chartContainer" style="height: 370px; max-width: 920px; margin: 0px auto;"></div><hr>
+        <div id="chartContainer1" style="height: 370px; max-width: 920px; margin: 100px auto;"></div>
+    </div>
+</div>
+<script>
+    $(document).ready(function() {
+        $.get("/info", function(data, status){
+            var points = [];
+            data.forEach(function(d){
+                var date = new Date(d.x)
+                var dd = date.getDate();
+                var mm = date.getMonth();
+                var yyyy = date.getFullYear();
+                var HH = date.getHours();
+                var MM = date.getMinutes();
+                var SS = date.getSeconds();
+                points.push({x: new Date(yyyy, mm, dd, HH, MM, SS), y: d.y});
+            });
+            var chart = new CanvasJS.Chart("chartContainer", {
+                animationEnabled: true,
+                exportEnabled: true,
+                theme: "light2",
+                title:{
+                    text: "Your Weight History"
+                },
+                axisX: {
+		            valueFormatString: "HH MM DD MMM YYYY"
+	            },
+                axisY:{
+                    title: "Weight (in kg)",
+                    includeZero: false
+                },
+                data: [{        
+                    type: "line",
+                    indexLabelFontSize: 16,
+                    dataPoints: points
+                }]
+            });
+            chart.render();
+        });
+
+        $.get("/api", function(user, status){
+            var diet = user.diet;
+
+            var data = []
+            var points = []
+            var sum = 0
+            diet.forEach(function(d){
+                if(!data[d.food.categoryTag]){
+                    data[d.food.categoryTag] = 1;
+                }
+                else{
+                    data[d.food.categoryTag]++;  
+                }
+                sum++;
+            });
+            
+            for(var key in data){
+                points.push({y: data[key]/sum*100, label: key})
+            }
+            var chart = new CanvasJS.Chart("chartContainer1", {
+                theme: "light2", // "light1", "light2", "dark1", "dark2"
+                exportEnabled: true,
+                animationEnabled: true,
+                title: {
+                    text: "Your Diet Distribution"
+                },
+                data: [{
+                    type: "pie",
+                    startAngle: 25,
+                    toolTipContent: "<b>{label}</b>: {y}%",
+                    showInLegend: "true",
+                    legendText: "{label}",
+                    indexLabelFontSize: 16,
+                    indexLabel: "{label} - {y}%",
+                    dataPoints: points
+                }]
+            });
+            chart.render();
+        });
+    });
+  </script>
+
+<%- include("../partials/footer")  %>
